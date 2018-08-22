@@ -91,11 +91,49 @@ class SettingController
                     $data = array_merge($data, $_POST[$group]);
                 }
 
+                $data = $this->validateAndSanitize($group, $data);
+
                 update_option($group, $data);
             }
 
             $this->refresh();
         }
+    }
+
+    private function validateAndSanitize($group, $data)
+    {
+        foreach ($data as $itemName => $itemValue) {
+            if (!$this->fieldExist($group, $itemName)) {
+                throw new \Exception("No valid input.");
+            }
+
+            if ($itemName == "logo"
+                and !is_numeric($itemValue)
+                and !is_null($itemValue)
+                and $itemValue !== "") {
+                throw new \Exception("No valid input (logo).");
+            }
+
+            if (is_numeric($itemValue)) {
+                $data[$itemName] = (int) $itemValue;
+                continue;
+            }
+
+            $data[$itemName] = sanitize_text_field($itemValue);
+        }
+
+        return $data;
+    }
+
+    private function fieldExist($group, $fieldName)
+    {
+        $options = $this->optionManager->getOptions($group, true);
+
+        if (isset($options[$fieldName]) || is_null($options[$fieldName])) {
+            return true;
+        }
+
+        return false;
     }
 
     private function refresh()

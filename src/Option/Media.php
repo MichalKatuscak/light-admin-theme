@@ -11,6 +11,10 @@ class Media implements OptionInterface
 
     private function getHtml($args)
     {
+        $args["option"] = esc_html($args["option"]);
+        $args["group"] = esc_html($args["group"]);
+        $args["value"] = esc_html($args["value"]);
+
         ob_start();
 
         echo '
@@ -24,7 +28,7 @@ class Media implements OptionInterface
             </div>
         </div>';
 
-        $my_saved_attachment_post_id = $args["value"];
+        $my_saved_attachment_post_id = $args["value"] ? $args["value"] : 0;
 
         ?>
         <script type='text/javascript'>
