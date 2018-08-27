@@ -46,6 +46,14 @@ class SettingController
             return;
         }
 
+        wp_enqueue_script(
+                "script",
+                plugins_url('../../assets/js/script.js', __FILE__),
+                [],
+            LightAdminTheme::VERSION,
+                true
+        );
+
         register_setting(LightAdminTheme::SLUG, LightAdminTheme::NAME);
 
         /** @var SettingInterface $setting */
@@ -56,16 +64,63 @@ class SettingController
         ?>
         <div class="wrap">
             <h1><?= esc_html(get_admin_page_title()); ?></h1>
+
+
+            <h2 class="nav-tab-wrapper">
+                <?php
+                /** @var SettingInterface $setting */
+                $i = 0;
+                foreach ($this->settings as $setting) {
+                    $i++;
+                    echo "<a href=\"#lat-".esc_attr($setting->getSlug())."\" 
+                    class=\"nav-tab lat-nav-tab " . ($i == 1 ? "nav-tab-active" : "") . "\">
+                        " . esc_html(__($setting->getName(), LightAdminTheme::SLUG)) . "
+                    </a>";
+                }
+                ?>
+            </h2>
+
             <form action="#" method="post">
                 <input type="hidden" name="lat-update" value="1"/>
                 <?php
                 settings_fields(LightAdminTheme::SLUG);
-                do_settings_sections(LightAdminTheme::SLUG);
+                $this->renderSettingsSection(LightAdminTheme::SLUG);
                 submit_button(__('Save Settings', LightAdminTheme::SLUG));
                 ?>
             </form>
         </div>
         <?php
+    }
+
+    private function renderSettingsSection($page)
+    {
+        global $wp_settings_sections, $wp_settings_fields;
+
+        if (!isset($wp_settings_sections[$page]))
+            return;
+
+        echo "<div id='lat-tabs'>";
+
+        $i = 0;
+        foreach ((array)$wp_settings_sections[$page] as $section) {
+            $i++;
+            echo "<div class='lat-tab' id='lat-" . $section['id'] . "' ".($i>1?"style='display:none'":"").">";
+            if ($section['title'])
+                // echo "<h2>{$section['title']}</h2>\n";
+
+            if ($section['callback'])
+                call_user_func($section['callback'], $section);
+
+            if (!isset($wp_settings_fields) || !isset($wp_settings_fields[$page]) || !isset($wp_settings_fields[$page][$section['id']]))
+                continue;
+            echo '<table class="form-table">';
+            do_settings_fields($page, $section['id']);
+            echo '</table>';
+            echo "</div>";
+        }
+
+        echo "</div>";
+
     }
 
     public function save()
@@ -115,7 +170,7 @@ class SettingController
             }
 
             if (is_numeric($itemValue)) {
-                $data[$itemName] = (int) $itemValue;
+                $data[$itemName] = (int)$itemValue;
                 continue;
             }
 
